@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybernetic AI Brain</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle at center, #0a0a0a 0%, #000000 100%);
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+        }
+        /* Add this to your CSS: */
+        #container canvas {
+            filter: brightness(1.5); /* 1.0 = normal, 2.0 = double brightness */
+        }
+
+        #controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #00ffff;
+            font-size: 11px;
+            z-index: 100;
+            background: rgba(0,0,0,0.8);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #title {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff0080;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 20px #ff0080;
+            opacity: 0;
+            animation: fadeOut 3s ease-in-out;
+            pointer-events: none;
+            z-index: 50;
+            font-family: 'Courier New', monospace;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        #scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 255, 0.03) 2px,
+                rgba(0, 255, 255, 0.03) 4px
+
+
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="scanlines"></div>
+    <div id="title">NEURAL NETWORK INITIALIZED</div>
+    
+    
+    <div id="container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+    <script>
+        // CYBERNETIC AI BRAIN SETTINGS
+        const CYBER_SETTINGS = {
+        // Keep these same
+        autoRotateSpeed: 3,
+        rotateSpeed: 1,
+        dampingFactor: 0.05,
+        cameraDistance: 7,
+        minZoom: 3,
+        maxZoom: 30,
+        fieldOfView: 25,
+        
+        // BRIGHTNESS FIXES - Make these brighter
+        ambientBrightness: 0.8,        // Was 0.15 → Now 0.4
+        mainLightBrightness: 5.0,      // Was 0.8 → Now 1.5
+        accentLightBrightness: 2.0,    // Was 1.2 → Now 2.0
+        rimLightBrightness: 10.8,       // Was 0.9 → Now 1.8
+        
+        // BACKGROUND - Slightly lighter but still dark
+        backgroundColor: 0x010613,     // Was 0x000000 → Now dark gray
+        ambientColor: 0x08C2EA,        // Was 0x001133 → Now brighter blue
+        
+        // Keep light colors same (they're perfect)
+        mainLightColor: 0x183472,
+        accentLightColor: 0xff0080,
+        rimLightColor: 0x00ff88,
+        
+        // BRAIN - Much more visible
+        brainScale: 2.8,
+        brainRoughness: 0.3,           // Was 0.1 → Now 0.2 (less mirror-like)
+        brainMetalness: 0.9,           // Was 0.8 → Now 0.6 (less reflective)
+        brainOpacity: 0.5,             // Was 0.95 → Now full opacity
+        brainEmissive: 0x002244,       // Was 0x002244 → Now brighter blue
+        brainEmissiveIntensity: 0.6,   // Was 0.3 → Now 0.6 (double the glow)
+        
+        // Effects stay same
+        bloomStrength: 1.5,
+        bloomRadius: 0.8,
+        bloomThreshold: 0.1
+        };
+
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(CYBER_SETTINGS.backgroundColor, 10, 50);
+        
+        const camera = new THREE.PerspectiveCamera(
+            CYBER_SETTINGS.fieldOfView, 
+            window.innerWidth / window.innerHeight, 
+            0.1, 
+            1000
+        );
+        
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: true,
+            powerPreference: "high-performance"
+        });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(CYBER_SETTINGS.backgroundColor, 1);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        // Advanced Lighting Setup
+        const ambientLight = new THREE.AmbientLight(
+            CYBER_SETTINGS.ambientColor, 
+            CYBER_SETTINGS.ambientBrightness
+        );
+        scene.add(ambientLight);
+
+        // Main cyan light
+        const mainLight = new THREE.DirectionalLight(
+            CYBER_SETTINGS.mainLightColor, 
+            CYBER_SETTINGS.mainLightBrightness
+        );
+        mainLight.position.set(15, 10, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
+
+        // Pink accent light
+        const accentLight = new THREE.PointLight(
+            CYBER_SETTINGS.accentLightColor, 
+            CYBER_SETTINGS.accentLightBrightness,
+            30
+        );
+        accentLight.position.set(-12, 8, -8);
+        scene.add(accentLight);
+
+        // Green rim light
+        const rimLight = new THREE.PointLight(
+            CYBER_SETTINGS.rimLightColor,
+            CYBER_SETTINGS.rimLightBrightness,
+            25
+        );
+        rimLight.position.set(5, -10, 12);
+        scene.add(rimLight);
+
+        // Blue bottom light
+        const bottomLight = new THREE.PointLight(0x0088ff, 0.6, 20);
+        bottomLight.position.set(0, -15, 0);
+        scene.add(bottomLight);
+
+        // Add this after your existing lights
+        const fillLight = new THREE.DirectionalLight(0x4488ff, 0.8);
+        fillLight.position.set(-15, -10, -10);
+        scene.add(fillLight);
+
+
+        
+        
+        // Enhanced central pain light - much stronger and wider coverage
+        const centralPainLight = new THREE.PointLight(0xff1100, 6.0, 250); // Increased intensity and distance
+        centralPainLight.position.set(1, 0.5, 0); // Exact center
+        centralPainLight.decay = 1; // Less decay = light travels further
+        scene.add(centralPainLight);
+
+        // Add additional supporting lights for wider coverage
+        const painLightArray = [];
+
+        // Create multiple overlapping lights for broader glow
+        for (let i = 0; i < 40; i++) {
+            const supportLight = new THREE.PointLight(0xaa1100, 4.0, 20);
+            const angle = (i * Math.PI * 2) / 4;
+            supportLight.position.set(
+                Math.cos(angle) * 0.5,
+                Math.sin(angle) * 0.3,
+                Math.sin(angle * 2) * 0.3
+            );
+            supportLight.decay = 0.8;
+            scene.add(supportLight);
+            painLightArray.push(supportLight);
+        }
+
+
+        
+
+
+
+        // Animated particles for atmosphere
+        const particleGeometry = new THREE.BufferGeometry();
+        const particleCount = 150;
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 50;
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 50;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+            
+            // Cyan and pink particles
+            const color = Math.random() > 0.5 ? new THREE.Color(0x00ffff) : new THREE.Color(0xff0080);
+            colors[i * 3] = color.r;
+            colors[i * 3 + 1] = color.g;
+            colors[i * 3 + 2] = color.b;
+        }
+
+        particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.1,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.9,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particles = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particles);
+
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = CYBER_SETTINGS.dampingFactor;
+        controls.enableZoom = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = CYBER_SETTINGS.autoRotateSpeed;
+        controls.rotateSpeed = CYBER_SETTINGS.rotateSpeed;
+        controls.minDistance = CYBER_SETTINGS.minZoom;
+        controls.maxDistance = CYBER_SETTINGS.maxZoom;
+
+        // Load and customize brain model
+        const loader = new THREE.GLTFLoader();
+        let brainModel;
+
+        loader.load('brain.glb', 
+            function (gltf) {
+                brainModel = gltf.scene;
+                
+                // Center and scale
+                const box = new THREE.Box3().setFromObject(brainModel);
+                const center = box.getCenter(new THREE.Vector3());
+                brainModel.position.sub(center);
+                
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                const scale = CYBER_SETTINGS.brainScale / maxDim;
+                brainModel.scale.multiplyScalar(scale);
+                
+                // Apply cybernetic materials
+                brainModel.traverse((child) => {
+                    if (child.isMesh) {
+                        // Create cybernetic material
+                        child.material = new THREE.MeshStandardMaterial({
+                            color: 0x4a4a4a,
+                            roughness: CYBER_SETTINGS.brainRoughness,
+                            metalness: CYBER_SETTINGS.brainMetalness,
+                            opacity: CYBER_SETTINGS.brainOpacity,
+                            transparent: true,
+                            emissive: new THREE.Color(CYBER_SETTINGS.brainEmissive),
+                            emissiveIntensity: CYBER_SETTINGS.brainEmissiveIntensity
+                        });
+                        
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                
+                scene.add(brainModel);
+                
+                // Position camera
+                camera.position.set(CYBER_SETTINGS.cameraDistance, -0.2, 0);
+                controls.target.set(0, -0.4, 0);
+                controls.update();
+                
+            },
+            function (progress) {
+                console.log('Neural network loading: ' + Math.round(progress.loaded / progress.total * 100) + '%');
+            },
+            function (error) {
+                console.error('Neural network initialization failed:', error);
+                // Fallback cybernetic sphere
+                const geometry = new THREE.SphereGeometry(2, 64, 64);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x2a2a2a,
+                    roughness: 0.1,
+                    metalness: 0.8,
+                    emissive: new THREE.Color(0x002244),
+                    emissiveIntensity: 0.3
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                scene.add(sphere);
+                brainModel = sphere;
+            }
+        );
+
+        // Animation variables
+        let time = 0;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.01;
+
+            
+            // Pulsing pain effect - irregular heartbeat-like pulse
+            const painPulse = Math.abs(Math.sin(time * 4)) * 0.6 + 
+                            Math.abs(Math.sin(time * 6.7)) * 0.3 + 0.8;
+            centralPainLight.intensity = painPulse * 18.5;
+            
+            
+            // Animate lights
+            accentLight.intensity = CYBER_SETTINGS.accentLightBrightness + Math.sin(time * 2) * 0.3;
+            rimLight.intensity = CYBER_SETTINGS.rimLightBrightness + Math.cos(time * 1.5) * 0.2;
+            
+            // Animate particles
+            particles.rotation.y += 0.001;
+            particles.rotation.x += 0.0005;
+            
+            // Pulse brain emissive
+            if (brainModel) {
+                brainModel.traverse((child) => {
+                    if (child.isMesh && child.material.emissiveIntensity !== undefined) {
+                        child.material.emissiveIntensity = CYBER_SETTINGS.brainEmissiveIntensity + 
+                            Math.sin(time * 3) * 0.1;
+                    }
+                });
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (event) => {
+            switch(event.code) {
+                case 'Space':
+                    controls.autoRotate = !controls.autoRotate;
+                    event.preventDefault();
+                    break;
+                case 'KeyR':
+                    // Reset camera position
+                    camera.position.set(CYBER_SETTINGS.cameraDistance, -0.2, 0);
+                    controls.target.set(0, -0.4, 0);
+                    controls.update();
+                    break;
+            }
+        });
+
+        // Start the neural network
+        animate();
+        
+        console.log('🧠 Cybernetic AI Brain System Online');
+        console.log('💾 Controls: SPACE=Auto-rotate, R=Reset camera');
+    </script>
+</body>
+</html>
