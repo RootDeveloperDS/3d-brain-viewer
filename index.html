@@ -19,7 +19,7 @@
         }
         /* Add this to your CSS: */
         #container canvas {
-            filter: brightness(1.5); /* 1.0 = normal, 2.0 = double brightness */
+            filter: brightness(1.3); /* 1.0 = normal, 2.0 = double brightness */
         }
 
         #controls {
@@ -43,15 +43,49 @@
             left: 50%;
             transform: translate(-50%, -50%);
             color: #ff0080;
-            font-size: 24px;
+            font-size: clamp(12px, 4vw, 24px);
             font-weight: bold;
             text-shadow: 0 0 20px #ff0080;
             opacity: 0;
-            animation: fadeOut 3s ease-in-out;
+            animation: titleSequence 4s ease-in-out;
             pointer-events: none;
             z-index: 50;
             font-family: 'Courier New', monospace;
+            white-space: nowrap;
+            width: 100vw;
+            text-align: center;
         }
+
+        /* Title animation sequence */
+        @keyframes titleSequence {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        
+
+        /* Loading screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, #0a0a0a 0%, #000000 100%);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease-out;
+        }
+
+        .loading-hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         
         @keyframes fadeOut {
             0% { opacity: 1; }
@@ -80,9 +114,13 @@
     </style>
 </head>
 <body>
-    <div id="scanlines"></div>
-    <div id="title">NEURAL NETWORK INITIALIZED</div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div id="title">NEURAL NETWORK INITIALIZING...</div>
+    </div>
     
+    <div id="scanlines"></div>
     
     <div id="container"></div>
 
@@ -96,44 +134,43 @@
     <script>
         // CYBERNETIC AI BRAIN SETTINGS
         const CYBER_SETTINGS = {
-        // Keep these same
-        autoRotateSpeed: 3,
-        rotateSpeed: 1,
-        dampingFactor: 0.05,
-        cameraDistance: 7,
-        minZoom: 3,
-        maxZoom: 30,
-        fieldOfView: 25,
-        
-        // BRIGHTNESS FIXES - Make these brighter
-        ambientBrightness: 0.8,        // Was 0.15 → Now 0.4
-        mainLightBrightness: 5.0,      // Was 0.8 → Now 1.5
-        accentLightBrightness: 2.0,    // Was 1.2 → Now 2.0
-        rimLightBrightness: 10.8,       // Was 0.9 → Now 1.8
-        
-        // BACKGROUND - Slightly lighter but still dark
-        backgroundColor: 0x010613,     // Was 0x000000 → Now dark gray
-        ambientColor: 0x08C2EA,        // Was 0x001133 → Now brighter blue
-        
-        // Keep light colors same (they're perfect)
-        mainLightColor: 0x183472,
-        accentLightColor: 0xff0080,
-        rimLightColor: 0x00ff88,
-        
-        // BRAIN - Much more visible
-        brainScale: 2.8,
-        brainRoughness: 0.3,           // Was 0.1 → Now 0.2 (less mirror-like)
-        brainMetalness: 0.9,           // Was 0.8 → Now 0.6 (less reflective)
-        brainOpacity: 0.5,             // Was 0.95 → Now full opacity
-        brainEmissive: 0x002244,       // Was 0x002244 → Now brighter blue
-        brainEmissiveIntensity: 0.6,   // Was 0.3 → Now 0.6 (double the glow)
-        
-        // Effects stay same
-        bloomStrength: 1.5,
-        bloomRadius: 0.8,
-        bloomThreshold: 0.1
+            // Keep these same
+            autoRotateSpeed: 3,
+            rotateSpeed: 1,
+            dampingFactor: 0.05,
+            cameraDistance: 7,
+            minZoom: 3,
+            maxZoom: 30,
+            fieldOfView: 25,
+            
+            // BRIGHTNESS FIXES - Make these brighter
+            ambientBrightness: 0.8,        // Was 0.15 → Now 0.4
+            mainLightBrightness: 1.5,      // Was 0.8 → Now 1.5
+            accentLightBrightness: 2.0,    // Was 1.2 → Now 2.0
+            rimLightBrightness: 1.8,       // Was 0.9 → Now 1.8
+            
+            // BACKGROUND - Slightly lighter but still dark
+            backgroundColor: 0x010613,     // Was 0x000000 → Now dark gray
+            ambientColor: 0x08C2EA,        // Was 0x001133 → Now brighter blue
+            
+            // Keep light colors same (they're perfect)
+            mainLightColor: 0x183472,
+            accentLightColor: 0xff0080,
+            rimLightColor: 0x00ff88,
+            
+            // BRAIN - Much more visible
+            brainScale: 2.8,
+            brainRoughness: 0.3,           // Was 0.1 → Now 0.2 (less mirror-like)
+            brainMetalness: 0.9,           // Was 0.8 → Now 0.6 (less reflective)
+            brainOpacity: 0.5,             // Was 0.95 → Now full opacity
+            brainEmissive: 0x002244,       // Was 0x002244 → Now brighter blue
+            brainEmissiveIntensity: 0.6,   // Was 0.3 → Now 0.6 (double the glow)
+            
+            // Effects stay same
+            bloomStrength: 1.5,
+            bloomRadius: 0.8,
+            bloomThreshold: 0.1
         };
-
 
         // Scene setup
         const scene = new THREE.Scene();
@@ -157,7 +194,7 @@
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.toneMappingExposure = 2.5; // Enhanced brightness
         
         document.getElementById('container').appendChild(renderer.domElement);
 
@@ -198,7 +235,7 @@
         scene.add(rimLight);
 
         // Blue bottom light
-        const bottomLight = new THREE.PointLight(0x0088ff, 0.6, 20);
+        const bottomLight = new THREE.PointLight(0x0088ff, 1.2, 20); // Enhanced brightness
         bottomLight.position.set(0, -15, 0);
         scene.add(bottomLight);
 
@@ -207,9 +244,6 @@
         fillLight.position.set(-15, -10, -10);
         scene.add(fillLight);
 
-
-        
-        
         // Enhanced central pain light - much stronger and wider coverage
         const centralPainLight = new THREE.PointLight(0xff1100, 6.0, 250); // Increased intensity and distance
         centralPainLight.position.set(1, 0.5, 0); // Exact center
@@ -233,11 +267,6 @@
             painLightArray.push(supportLight);
         }
 
-
-        
-
-
-
         // Animated particles for atmosphere
         const particleGeometry = new THREE.BufferGeometry();
         const particleCount = 150;
@@ -260,7 +289,7 @@
         particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
         const particleMaterial = new THREE.PointsMaterial({
-            size: 0.1,
+            size: 0.15,              // Bigger particles
             vertexColors: true,
             transparent: true,
             opacity: 0.9,
@@ -281,10 +310,14 @@
         controls.minDistance = CYBER_SETTINGS.minZoom;
         controls.maxDistance = CYBER_SETTINGS.maxZoom;
 
-        // Load and customize brain model
+        // ENHANCED LOADING SEQUENCE VARIABLES
         const loader = new THREE.GLTFLoader();
         let brainModel;
+        let isLoaded = false;
+        let loadingComplete = false;
+        let fadeStartTime = 0;
 
+        // Enhanced loader with smooth fade-in sequence
         loader.load('brain.glb', 
             function (gltf) {
                 brainModel = gltf.scene;
@@ -299,18 +332,21 @@
                 const scale = CYBER_SETTINGS.brainScale / maxDim;
                 brainModel.scale.multiplyScalar(scale);
                 
+                // Make brain invisible initially for fade effect
+                brainModel.visible = true;
+                
                 // Apply cybernetic materials
                 brainModel.traverse((child) => {
                     if (child.isMesh) {
-                        // Create cybernetic material
+                        // Create enhanced cybernetic material
                         child.material = new THREE.MeshStandardMaterial({
-                            color: 0x4a4a4a,
+                            color: 0x4a4a4a, // Lighter for better visibility
                             roughness: CYBER_SETTINGS.brainRoughness,
                             metalness: CYBER_SETTINGS.brainMetalness,
-                            opacity: CYBER_SETTINGS.brainOpacity,
+                            opacity: 0, // Start completely transparent
                             transparent: true,
                             emissive: new THREE.Color(CYBER_SETTINGS.brainEmissive),
-                            emissiveIntensity: CYBER_SETTINGS.brainEmissiveIntensity
+                            emissiveIntensity: 0 // Start with no glow
                         });
                         
                         child.castShadow = true;
@@ -325,63 +361,166 @@
                 controls.target.set(0, -0.4, 0);
                 controls.update();
                 
+                // Mark as loaded and start loading sequence
+                isLoaded = true;
+                setTimeout(startLoadingSequence, 500);
             },
             function (progress) {
-                console.log('Neural network loading: ' + Math.round(progress.loaded / progress.total * 100) + '%');
+                const percent = Math.round(progress.loaded / progress.total * 100);
+                console.log('Neural network loading: ' + percent + '%');
+                
+                // Dynamic title updates based on progress
+                const title = document.getElementById('title');
+                if (title) {
+                    if (percent < 20) {
+                        title.textContent = 'NEURAL NETWORK INITIALIZING...';
+                    } else if (percent < 40) {
+                        title.textContent = 'LOADING SYNAPSES...';
+                    } else if (percent < 60) {
+                        title.textContent = 'ESTABLISHING CONNECTIONS...';
+                    } else if (percent < 80) {
+                        title.textContent = 'CALIBRATING NEURONS...';
+                    } else if (percent < 95) {
+                        title.textContent = 'ACTIVATING CONSCIOUSNESS...';
+                    } else {
+                        title.textContent = 'NEURAL NETWORK ONLINE';
+                    }
+                }
             },
             function (error) {
                 console.error('Neural network initialization failed:', error);
-                // Fallback cybernetic sphere
-                const geometry = new THREE.SphereGeometry(2, 64, 64);
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0x2a2a2a,
-                    roughness: 0.1,
-                    metalness: 0.8,
-                    emissive: new THREE.Color(0x002244),
-                    emissiveIntensity: 0.3
-                });
-                const sphere = new THREE.Mesh(geometry, material);
-                scene.add(sphere);
-                brainModel = sphere;
+                const title = document.getElementById('title');
+                if (title) title.textContent = 'INITIALIZATION FAILED - FALLBACK MODE';
+                
+                setTimeout(() => {
+                    // Create enhanced fallback brain
+                    createFallbackBrain();
+                    startLoadingSequence();
+                }, 1000);
             }
         );
+
+        // Enhanced fallback brain creation
+        function createFallbackBrain() {
+            const geometry = new THREE.SphereGeometry(2, 64, 64);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x4a4a4a,
+                roughness: CYBER_SETTINGS.brainRoughness,
+                metalness: CYBER_SETTINGS.brainMetalness,
+                emissive: new THREE.Color(CYBER_SETTINGS.brainEmissive),
+                emissiveIntensity: 0, // Start with no glow
+                transparent: true,
+                opacity: 0 // Start transparent
+            });
+            brainModel = new THREE.Mesh(geometry, material);
+            scene.add(brainModel);
+            isLoaded = true;
+        }
+
+        // SMOOTH FADE-IN LOADING SEQUENCE FUNCTION
+        function startLoadingSequence() {
+            // Wait for title animation to complete (4 seconds)
+            setTimeout(() => {
+                // Hide loading screen
+                const loadingScreen = document.getElementById('loadingScreen');
+                if (loadingScreen) {
+                    loadingScreen.classList.add('loading-hidden');
+                }
+                
+                // Start brain fade-in after 1 second
+                setTimeout(() => {
+                    if (brainModel) {
+                        // Initialize fade effect
+                        brainModel.userData.fadeAnimation = true;
+                        fadeStartTime = performance.now();
+                        
+                        // Show controls after brain fades in
+                        setTimeout(() => {
+                            const controls = document.getElementById('controls');
+                            if (controls) controls.style.opacity = '1';
+                        }, 3000);
+                        
+                        loadingComplete = true;
+                    }
+                }, 1000);
+                
+            }, 4500); // Wait for title sequence
+        }
 
         // Animation variables
         let time = 0;
 
-        // Animation loop
+        // ENHANCED ANIMATION LOOP WITH SMOOTH FADE EFFECT
         function animate() {
             requestAnimationFrame(animate);
             time += 0.01;
 
+            // SMOOTH BRAIN FADE-IN EFFECT
+            if (brainModel && brainModel.userData.fadeAnimation) {
+                const fadeDuration = 3000; // 3 seconds fade duration
+                const elapsed = performance.now() - fadeStartTime;
+                const fadeProgress = Math.min(elapsed / fadeDuration, 1);
+                
+                // Smooth fade curve (ease-in-out)
+                const easedProgress = fadeProgress * fadeProgress * (3.0 - 2.0 * fadeProgress);
+                
+                // Apply fade to all materials
+                brainModel.traverse((child) => {
+                    if (child.isMesh) {
+                        // Fade in opacity
+                        child.material.opacity = easedProgress * CYBER_SETTINGS.brainOpacity;
+                        
+                        // Fade in emissive intensity
+                        child.material.emissiveIntensity = easedProgress * CYBER_SETTINGS.brainEmissiveIntensity;
+                    }
+                });
+                
+                // Optional: Slight scale-up during fade for dramatic effect
+                const scaleMultiplier = 0.8 + (easedProgress * 0.2); // Scale from 80% to 100%
+                const originalScale = CYBER_SETTINGS.brainScale / 2; // Adjust based on your scale
+                brainModel.scale.setScalar(originalScale * scaleMultiplier);
+                
+                // End fade animation
+                if (fadeProgress >= 1) {
+                    brainModel.userData.fadeAnimation = false;
+                }
+            }
+
+            // EXISTING ANIMATIONS (only run after loading complete)
+            if (loadingComplete) {
+                // Pulsing pain effect - irregular heartbeat-like pulse
+                const painPulse = Math.abs(Math.sin(time * 4)) * 0.6 + 
+                                Math.abs(Math.sin(time * 6.7)) * 0.3 + 0.8;
+                centralPainLight.intensity = painPulse * 18.5;
+                
+                // Animate supporting lights
+                painLightArray.forEach((light, index) => {
+                    const offset = (index * 0.3);
+                    const supportIntensity = Math.abs(Math.sin(time * 3 + offset)) * 2.0 + 3.0;
+                    light.intensity = supportIntensity;
+                });
+                
+                // Animate main lights
+                accentLight.intensity = CYBER_SETTINGS.accentLightBrightness + Math.sin(time * 2) * 0.3;
+                rimLight.intensity = CYBER_SETTINGS.rimLightBrightness + Math.cos(time * 1.5) * 0.2;
+                
+                // Pulse brain emissive (only if not fading)
+                if (brainModel && !brainModel.userData.fadeAnimation) {
+                    brainModel.traverse((child) => {
+                        if (child.isMesh && child.material.emissiveIntensity !== undefined) {
+                            child.material.emissiveIntensity = CYBER_SETTINGS.brainEmissiveIntensity + 
+                                Math.sin(time * 3) * 0.1;
+                        }
+                    });
+                }
+            }
             
-            // Pulsing pain effect - irregular heartbeat-like pulse
-            const painPulse = Math.abs(Math.sin(time * 4)) * 0.6 + 
-                            Math.abs(Math.sin(time * 6.7)) * 0.3 + 0.8;
-            centralPainLight.intensity = painPulse * 18.5;
-            
-            
-            // Animate lights
-            accentLight.intensity = CYBER_SETTINGS.accentLightBrightness + Math.sin(time * 2) * 0.3;
-            rimLight.intensity = CYBER_SETTINGS.rimLightBrightness + Math.cos(time * 1.5) * 0.2;
-            
-            // Animate particles
+            // Animate particles (always running)
             particles.rotation.y += 0.001;
             particles.rotation.x += 0.0005;
             
-            // Pulse brain emissive
-            if (brainModel) {
-                brainModel.traverse((child) => {
-                    if (child.isMesh && child.material.emissiveIntensity !== undefined) {
-                        child.material.emissiveIntensity = CYBER_SETTINGS.brainEmissiveIntensity + 
-                            Math.sin(time * 3) * 0.1;
-                    }
-                });
-            }
-            
             controls.update();
             renderer.render(scene, camera);
-
         }
 
         // Handle window resize
@@ -391,7 +530,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Keyboard controls
+        // Enhanced keyboard controls
         document.addEventListener('keydown', (event) => {
             switch(event.code) {
                 case 'Space':
@@ -404,14 +543,23 @@
                     controls.target.set(0, -0.4, 0);
                     controls.update();
                     break;
+                case 'KeyF':
+                    // Trigger fade effect manually (for testing)
+                    if (brainModel && loadingComplete) {
+                        brainModel.userData.fadeAnimation = true;
+                        fadeStartTime = performance.now();
+                    }
+                    break;
             }
         });
 
-        // Start the neural network
+        // Start the enhanced neural network system
         animate();
         
-        console.log('🧠 Cybernetic AI Brain System Online');
-        console.log('💾 Controls: SPACE=Auto-rotate, R=Reset camera');
-    </script>
+        console.log('🧠 Enhanced Cybernetic AI Brain System Online');
+        console.log('💾 Controls: SPACE=Auto-rotate, R=Reset camera, F=Fade effect');
+        console.log('🎬 Smooth loading sequence initialized...');
+</script>
+
 </body>
 </html>
